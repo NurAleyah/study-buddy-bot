@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Study Buddy Bot 🌸</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      background-color: #fdf6fb;
+      background-image:
+        /* floating code symbols */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600'%3E%3Ctext x='30' y='60' font-size='18' fill='%23e8c7e0' opacity='.55' font-family='monospace'%3Edef hello():%3C/text%3E%3Ctext x='500' y='110' font-size='14' fill='%23c9a8d4' opacity='.45' font-family='monospace'%3Eif x == True:%3C/text%3E%3Ctext x='100' y='160' font-size='16' fill='%23f0b8d0' opacity='.5' font-family='monospace'%3Eprint(%22Hello%22)%3C/text%3E%3Ctext x='650' y='200' font-size='13' fill='%23d4b8e8' opacity='.4' font-family='monospace'%3Efor i in range(10):%3C/text%3E%3Ctext x='40' y='260' font-size='15' fill='%23e8c7e0' opacity='.45' font-family='monospace'%3Ereturn result%3C/text%3E%3Ctext x='420' y='300' font-size='17' fill='%23f5c6d8' opacity='.5' font-family='monospace'%3Ewhile True:%3C/text%3E%3Ctext x='720' y='350' font-size='13' fill='%23c9a8d4' opacity='.4' font-family='monospace'%3Eimport math%3C/text%3E%3Ctext x='150' y='390' font-size='14' fill='%23e8b8d4' opacity='.45' font-family='monospace'%3Ex = [1,2,3]%3C/text%3E%3Ctext x='550' y='440' font-size='16' fill='%23d4b8e8' opacity='.5' font-family='monospace'%3Eclass Dog:%3C/text%3E%3Ctext x='60' y='490' font-size='13' fill='%23f0b8d0' opacity='.4' font-family='monospace'%3Etry: ... except:%3C/text%3E%3Ctext x='700' y='530' font-size='15' fill='%23e8c7e0' opacity='.45' font-family='monospace'%3Elambda x: x*2%3C/text%3E%3Ctext x='300' y='575' font-size='14' fill='%23c9a8d4' opacity='.4' font-family='monospace'%3Edict.keys()%3C/text%3E%3C/svg%3E");
+      background-size: cover;
+      background-attachment: fixed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 12px;
+    }
+
+    /* ── Card ── */
+    .chat-card {
+      width: 100%;
+      max-width: 680px;
+      background: rgba(255,255,255,0.94);
+      border-radius: 24px;
+      border: 1.5px solid #f0cce0;
+      box-shadow: 0 8px 32px rgba(200,120,180,0.13);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .chat-header {
+      background: linear-gradient(135deg, #f9e4f4 0%, #fce8d8 100%);
+      border-bottom: 1.5px solid #f0cce0;
+      padding: 18px 22px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .bot-avatar {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e8a0c8 0%, #c97ab8 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      border: 2.5px solid #f5d0e8;
+      flex-shrink: 0;
+    }
+    .header-text h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #5a2d6e;
+      letter-spacing: 0.01em;
+    }
+    .header-text p {
+      font-size: 12.5px;
+      color: #9a5fa8;
+      margin-top: 1px;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: #6abf69;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    /* ── Topic pill ── */
+    .topic-banner {
+      display: none;
+      background: #fef0fa;
+      border-bottom: 1px solid #f0cce0;
+      padding: 7px 22px;
+      font-size: 12.5px;
+      color: #7a3f8a;
+    }
+    .topic-banner.visible { display: block; }
+    .topic-banner strong { color: #5a2d6e; }
+
+    /* ── Messages ── */
+    .chat-messages {
+      flex: 1;
+      height: 420px;
+      overflow-y: auto;
+      padding: 20px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scrollbar-width: thin;
+      scrollbar-color: #e8c0dc transparent;
+    }
+    .chat-messages::-webkit-scrollbar { width: 6px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: #e8c0dc; border-radius: 6px; }
+
+    /* ── Bubbles ── */
+    .msg-row { display: flex; align-items: flex-end; gap: 8px; }
+    .msg-row.user { flex-direction: row-reverse; }
+
+    .bubble {
+      max-width: 78%;
+      padding: 11px 15px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .bubble.bot {
+      background: #fef0fa;
+      border: 1px solid #f0cce0;
+      color: #3a1a4a;
+      border-bottom-left-radius: 5px;
+    }
+    .bubble.user {
+      background: linear-gradient(135deg, #c97ab8, #a057a0);
+      color: #fff;
+      border-bottom-right-radius: 5px;
+    }
+    .bubble code {
+      background: rgba(180,100,160,0.1);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #7a3070;
+    }
+    .bubble pre {
+      background: #f5eaf8;
+      border: 1px solid #e8c0dc;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 6px 0;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #4a1a5a;
+      white-space: pre;
+    }
+    .bubble.user code { background: rgba(255,255,255,0.2); color: #fff; }
+
+    .msg-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e8a0c8, #c97ab8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .msg-avatar.user-av {
+      background: linear-gradient(135deg, #c97ab8, #8a3a9a);
+    }
+
+    /* Typing indicator */
+    .typing-indicator { display: flex; gap: 5px; padding: 13px 16px; align-items: center; }
+    .typing-dot {
+      width: 8px; height: 8px;
+      background: #c97ab8;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-7px); }
+    }
+
+    /* Quick-reply chips */
+    .quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 4px 0 2px 38px;
+    }
+    .qr-chip {
+      background: #fff;
+      border: 1.5px solid #e0a8d0;
+      color: #7a3070;
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: background 0.18s, color 0.18s;
+      white-space: nowrap;
+    }
+    .qr-chip:hover { background: #f5d0ea; color: #5a1060; }
+
+    /* ── Input area ── */
+    .chat-input-area {
+      border-top: 1.5px solid #f0cce0;
+      background: #fdf6fb;
+      padding: 14px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .chat-input-area textarea {
+      flex: 1;
+      border: 1.5px solid #e0a8d0;
+      border-radius: 16px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      max-height: 120px;
+      min-height: 44px;
+      background: #fff;
+      color: #3a1a4a;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+    }
+    .chat-input-area textarea:focus { border-color: #c97ab8; }
+    .chat-input-area textarea::placeholder { color: #c090b8; }
+
+    .send-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #c97ab8, #a057a0);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.18s, transform 0.12s;
+    }
+    .send-btn:hover { opacity: 0.88; transform: scale(1.05); }
+    .send-btn svg { width: 20px; height: 20px; fill: white; }
+
+    /* Floral decorations */
+    .floral-row {
+      text-align: center;
+      font-size: 18px;
+      letter-spacing: 4px;
+      padding: 6px 0 2px;
+      color: #d090c0;
+      background: #fef8fd;
+      border-top: 1px solid #f5e0f0;
+      user-select: none;
+    }
+
+    /* Human handoff badge */
+    .handoff-badge {
+      display: inline-block;
+      background: #fff3e0;
+      border: 1px solid #ffb74d;
+      color: #e65100;
+      font-size: 12px;
+      padding: 2px 9px;
+      border-radius: 10px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="chat-card">
+
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="bot-avatar">🌸</div>
+    <div class="header-text">
+      <h1>Study Buddy Bot</h1>
+      <p><span class="status-dot"></span>Online · Here to help you learn Python 🐍</p>
+    </div>
+  </div>
+
+  <!-- Topic banner -->
+  <div class="topic-banner" id="topicBanner">
+    📚 Current topic: <strong id="topicLabel">—</strong>
+  </div>
+
+  <!-- Messages -->
+  <div class="chat-messages" id="chatMessages"></div>
+
+  <!-- Floral divider -->
+  <div class="floral-row">🌸 ✿ 🌼 ✿ 🌸</div>
+
+  <!-- Input -->
+  <div class="chat-input-area">
+    <textarea id="userInput" placeholder="Ask me anything about Python…" rows="1"></textarea>
+    <button class="send-btn" id="sendBtn" title="Send">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   STUDY BUDDY BOT  –  Basic Python Learning Assistant
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── State ── */
+let currentTopic = null;
+let failedAttempts = 0;
+let offTopicAttempts = 0;
+let waitingForTopic = false;
+let handedOff = false;
+
+/* ── Python Knowledge Base ── */
+const KB = {
+  variables: {
+    explain: `A **variable** is like a labelled box 📦 where you store a value.\n\nIn Python you just write:\n\`\`\`python\nname = "Alice"   # a string\nage  = 20        # an integer\nprice = 9.99     # a float\n\`\`\`\nNo need to declare a type — Python figures it out automatically!`,
+    formula: `Variable assignment follows this pattern:\n\n\`\`\`\nvariable_name = value\n\`\`\`\n• The **left side** is the name you choose.\n• The \`=\` is the assignment operator (not "equals"!).\n• The **right side** is the value you want to store.\n\nExample: \`x = 5\` stores the integer 5 in a box called \`x\`.`,
+    practice: `🌸 **Practice Question — Variables**\n\nWrite Python code to store your name in a variable called \`my_name\` and your age in a variable called \`my_age\`. Then print both.\n\n💡 *Hint: use the \`print()\` function and the \`=\` operator.*\n\nTry it yourself first — then ask me if you're stuck!`
+  },
+  "data types": {
+    explain: `Python has several built-in **data types**:\n\n• \`int\`   — whole numbers: \`5\`, \`-3\`\n• \`float\` — decimals: \`3.14\`\n• \`str\`   — text: \`"hello"\`\n• \`bool\`  — True or False\n• \`list\`  — ordered collection: \`[1, 2, 3]\`\n• \`dict\`  — key-value pairs: \`{"name": "Alice"}\`\n• \`tuple\` — immutable list: \`(1, 2, 3)\`\n\nYou can check the type of anything with \`type(x)\`.`,
+    formula: `The \`type()\` function:\n\`\`\`python\ntype(42)       # <class 'int'>\ntype(3.14)     # <class 'float'>\ntype("hello")  # <class 'str'>\ntype(True)     # <class 'bool'>\n\`\`\``,
+    practice: `🌸 **Practice Question — Data Types**\n\nWhat data type would you use to store each of the following? (int, float, str, bool, list)\n\n1. A student's grade: 85\n2. A product price: 19.99\n3. A person's name: "Bob"\n4. Whether a light is on: True\n5. A shopping list: apple, banana, cherry\n\n💡 Think about each one, then check with \`type()\` in Python!`
+  },
+  "if statements": {
+    explain: `An **if statement** lets your program make decisions 🤔.\n\nBasic structure:\n\`\`\`python\nif condition:\n    # runs when condition is True\nelif other_condition:\n    # runs when other_condition is True\nelse:\n    # runs when none of the above are True\n\`\`\`\n\nExample:\n\`\`\`python\ngrade = 75\nif grade >= 90:\n    print("Excellent!")\nelif grade >= 60:\n    print("Pass")\nelse:\n    print("Try again")\n\`\`\``,
+    formula: `The condition uses **comparison operators**:\n\n| Operator | Meaning |\n|---|---|\n| \`==\` | equal to |\n| \`!=\` | not equal |\n| \`>\`  | greater than |\n| \`<\`  | less than |\n| \`>=\` | greater than or equal |\n| \`<=\` | less than or equal |`,
+    practice: `🌸 **Practice Question — If Statements**\n\nWrite a program that asks for a number and prints:\n• "Positive" if the number is greater than 0\n• "Negative" if less than 0\n• "Zero" if it equals 0\n\n💡 *Hint: use \`int(input())\` to read the number, and build an if/elif/else block.*`
+  },
+  loops: {
+    explain: `**Loops** let you repeat code without typing it over and over 🔄.\n\nPython has two main loops:\n\n**for loop** — iterate over a sequence:\n\`\`\`python\nfor i in range(5):\n    print(i)   # prints 0, 1, 2, 3, 4\n\`\`\`\n\n**while loop** — repeat while a condition is true:\n\`\`\`python\ncount = 0\nwhile count < 3:\n    print(count)\n    count += 1\n\`\`\``,
+    formula: `**for loop syntax:**\n\`\`\`\nfor variable in iterable:\n    body\n\`\`\`\n\n**while loop syntax:**\n\`\`\`\nwhile condition:\n    body\n\`\`\`\n\n\`range(n)\` generates numbers 0 to n-1.\n\`range(start, stop, step)\` gives more control.`,
+    practice: `🌸 **Practice Question — Loops**\n\nWrite a \`for\` loop that prints the multiplication table of 3 (from 3×1 to 3×10).\n\nExpected output:\n\`\`\`\n3 x 1 = 3\n3 x 2 = 6\n...\n3 x 10 = 30\n\`\`\`\n💡 *Hint: use \`range(1, 11)\` and print with f-strings or concatenation.*`
+  },
+  functions: {
+    explain: `A **function** is a reusable block of code with a name 🧰.\n\nDefine it once, call it many times:\n\`\`\`python\ndef greet(name):\n    print("Hello, " + name + "!")\n\ngreet("Alice")   # Hello, Alice!\ngreet("Bob")     # Hello, Bob!\n\`\`\`\n\nFunctions can also **return** a value:\n\`\`\`python\ndef add(a, b):\n    return a + b\n\nresult = add(3, 4)   # result = 7\n\`\`\``,
+    formula: `**Function syntax:**\n\`\`\`\ndef function_name(parameter1, parameter2):\n    # body\n    return value  # optional\n\`\`\`\n\n• \`def\` keyword starts the definition.\n• Parameters are inputs (optional).\n• \`return\` sends a value back (optional).`,
+    practice: `🌸 **Practice Question — Functions**\n\nWrite a function called \`is_even\` that takes a number and returns \`True\` if it's even, \`False\` if it's odd.\n\nThen call it with the numbers 4 and 7 and print the results.\n\n💡 *Hint: use the modulus operator \`%\`. An even number has no remainder when divided by 2.*`
+  },
+  lists: {
+    explain: `A **list** is an ordered, changeable collection of items 📋.\n\n\`\`\`python\nfruits = ["apple", "banana", "cherry"]\nprint(fruits[0])   # apple  (index starts at 0)\nfruits.append("mango")   # add item\nfruits.remove("banana")  # remove item\nprint(len(fruits))       # 3\n\`\`\``,
+    formula: `Common list operations:\n\n| Method | What it does |\n|---|---|\n| \`list.append(x)\` | Add x to the end |\n| \`list.remove(x)\` | Remove first x |\n| \`list.pop(i)\` | Remove item at index i |\n| \`list.sort()\` | Sort the list |\n| \`len(list)\` | Number of items |\n| \`list[i]\` | Access item at index i |`,
+    practice: `🌸 **Practice Question — Lists**\n\nCreate a list of 5 of your favourite foods. Then:\n1. Print the first item\n2. Print the last item (tip: use index \`-1\`)\n3. Add one more food\n4. Print the total number of items\n\n💡 Try solving it step by step!`
+  },
+  strings: {
+    explain: `A **string** is text enclosed in quotes 📝.\n\n\`\`\`python\nname = "Alice"\ngreeting = 'Hello, ' + name  # concatenation\nlength = len(name)           # 5\nupper = name.upper()         # "ALICE"\n\`\`\`\n\n**f-strings** (formatted strings) make it easy to embed variables:\n\`\`\`python\nage = 20\nprint(f"My name is {name} and I am {age} years old.")\n\`\`\``,
+    formula: `Useful string methods:\n\n| Method | Example | Result |\n|---|---|---|\n| \`.upper()\` | \`"hi".upper()\` | \`"HI"\` |\n| \`.lower()\` | \`"HI".lower()\` | \`"hi"\` |\n| \`.strip()\` | \`" hi ".strip()\` | \`"hi"\` |\n| \`.split()\` | \`"a b".split()\` | \`["a","b"]\` |\n| \`.replace()\` | \`"abc".replace("b","x")\` | \`"axc"\` |\n| \`len()\` | \`len("hi")\` | \`2\` |`,
+    practice: `🌸 **Practice Question — Strings**\n\nWrite a program that:\n1. Asks the user for their full name\n2. Prints the name in ALL CAPS\n3. Prints how many characters are in the name (including spaces)\n4. Prints the name reversed\n\n💡 *Hint: Reversed string: \`name[::-1]\`*`
+  },
+  dictionaries: {
+    explain: `A **dictionary** stores data as **key-value pairs** 🗂️, like a real dictionary where a word (key) has a definition (value).\n\n\`\`\`python\nstudent = {\n    "name": "Alice",\n    "age": 20,\n    "grade": "A"\n}\nprint(student["name"])   # Alice\nstudent["age"] = 21      # update\nstudent["email"] = "alice@example.com"  # add new key\n\`\`\``,
+    formula: `Common dictionary operations:\n\n| Operation | Syntax |\n|---|---|\n| Access value | \`d["key"]\` |\n| Add/Update | \`d["key"] = value\` |\n| Remove | \`del d["key"]\` |\n| Check key exists | \`"key" in d\` |\n| All keys | \`d.keys()\` |\n| All values | \`d.values()\` |`,
+    practice: `🌸 **Practice Question — Dictionaries**\n\nCreate a dictionary for a book with keys: \`title\`, \`author\`, \`year\`, and \`pages\`. Fill it with any book you like.\n\nThen:\n1. Print the author\n2. Update the year to 2024\n3. Add a new key \`genre\` with a value\n4. Print all the keys\n\n💡 Try building it step by step!`
+  },
+  "input output": {
+    explain: `**Input** lets your program ask the user for data.\n**Output** lets it display data.\n\n\`\`\`python\n# Output\nprint("Hello, World!")\n\n# Input\nname = input("What is your name? ")\nprint("Nice to meet you, " + name + "!")\n\`\`\`\n\n⚠️ \`input()\` always returns a **string**. To use it as a number:\n\`\`\`python\nage = int(input("Enter your age: "))\n\`\`\``,
+    formula: `**print() syntax:**\n\`\`\`\nprint(value1, value2, sep=" ", end="\\n")\n\`\`\`\n\n**input() syntax:**\n\`\`\`\nvariable = input("prompt message")\n\`\`\`\n\nType conversions:\n• \`int(x)\` → integer\n• \`float(x)\` → decimal\n• \`str(x)\` → string`,
+    practice: `🌸 **Practice Question — Input & Output**\n\nWrite a program that:\n1. Asks the user for two numbers\n2. Adds them together\n3. Prints: "The sum of X and Y is Z"\n\n💡 *Remember to convert \`input()\` to \`int\` or \`float\` before adding!*`
+  }
+};
+
+const TOPICS = Object.keys(KB);
+
+const TOPIC_ALIASES = {
+  "var": "variables", "variable": "variables",
+  "type": "data types", "datatypes": "data types", "data type": "data types",
+  "if": "if statements", "if else": "if statements", "conditional": "if statements", "conditionals": "if statements",
+  "loop": "loops", "for loop": "loops", "while loop": "loops", "for": "loops", "while": "loops",
+  "function": "functions", "def": "functions", "method": "functions",
+  "list": "lists", "array": "lists",
+  "string": "strings", "str": "strings",
+  "dict": "dictionaries", "dictionary": "dictionaries",
+  "input": "input output", "output": "input output", "print": "input output", "i/o": "input output"
+};
+
+/* ── Banned / Handoff triggers ── */
+const BANNED_PATTERNS = [
+  /do (?:my|the) (assignment|exam|test|homework|quiz|project)/i,
+  /write (?:my|the) (assignment|exam|homework|code for me)/i,
+  /(?:solve|complete|finish) (?:my|the) (assignment|exam|test|homework)/i,
+  /(?:give me|what(?:'s| is)) (?:the )?answer[s]? (?:to|for) (?:my|the) (assignment|exam|test|homework)/i,
+  /do this (?:for|instead of) me/i,
+  /just (?:give|tell) me (?:the )?answer/i
+];
+
+const OFF_TOPIC_PATTERNS = [
+  /weather/i, /news/i, /sport[s]?/i, /music/i, /movie[s]?/i, /recipe[s]?/i,
+  /relationship/i, /politic[s]?/i, /joke[s]?/i, /stor(y|ies)/i,
+  /\bmath(?:ematics)?\b(?!.*python)/i,
+  /(?:history|geography|science|biology|chemistry|physics)(?!.*python)/i,
+  /cook(ing)?/i, /fashion/i, /travel/i, /social media/i, /tik.?tok/i,
+  /instagram/i, /facebook/i, /twitter/i, /gaming(?!.*python)/i,
+  /anime/i, /manga/i, /celebrity|celebrities/i,
+  /\b(?:java|javascript|c\+\+|c#|ruby|php|swift|kotlin|rust|golang|html|css)(?!.*python)\b/i,
+  /* everyday life / personal topics clearly unrelated to Python */
+  /\b(sleep|hungry|tired|bored|sad|happy|angry|love|hate|food|drink|eat|lunch|dinner|breakfast|coffee|tea|water)\b/i,
+  /\b(dog|cat|pet|animal|baby|family|friend|money|salary|shopping|gym|workout|exercise)\b/i
+];
+
+/* ── Helpers ── */
+function detectTopic(text) {
+  const lower = text.toLowerCase();
+  if (TOPIC_ALIASES[lower.trim()]) return TOPIC_ALIASES[lower.trim()];
+  for (const [alias, canonical] of Object.entries(TOPIC_ALIASES)) {
+    if (lower.includes(alias)) return canonical;
+  }
+  for (const t of TOPICS) {
+    if (lower.includes(t)) return t;
+  }
+  return null;
+}
+
+function isBanned(text) {
+  return BANNED_PATTERNS.some(p => p.test(text));
+}
+
+function isOffTopic(text) {
+  return OFF_TOPIC_PATTERNS.some(p => p.test(text));
+}
+
+function formatBotText(raw) {
+  // Convert **bold** and code blocks for display
+  return raw
+    .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
+      `<pre>${escHtml(code.trimEnd())}</pre>`)
+    .replace(/`([^`]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* ── Render helpers ── */
+function addMessage(text, role, chips) {
+  const msgs = document.getElementById('chatMessages');
+
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const av = document.createElement('div');
+  av.className = `msg-avatar ${role === 'user' ? 'user-av' : ''}`;
+  av.textContent = role === 'user' ? '🎓' : '🌸';
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}`;
+  bubble.innerHTML = role === 'bot' ? formatBotText(text) : escHtml(text);
+
+  row.appendChild(av);
+  row.appendChild(bubble);
+  msgs.appendChild(row);
+
+  if (chips && chips.length) {
+    const qr = document.createElement('div');
+    qr.className = 'quick-replies';
+    chips.forEach(chip => {
+      const btn = document.createElement('button');
+      btn.className = 'qr-chip';
+      btn.textContent = chip;
+      btn.onclick = () => { qr.remove(); handleUserInput(chip); };
+      qr.appendChild(btn);
+    });
+    msgs.appendChild(qr);
+  }
+
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.id = 'typingRow';
+
+  const av = document.createElement('div');
+  av.className = 'msg-avatar';
+  av.textContent = '🌸';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble bot typing-indicator';
+  bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+
+  row.appendChild(av);
+  row.appendChild(bubble);
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typingRow');
+  if (el) el.remove();
+}
+
+function botReply(text, chips, delay = 900) {
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    addMessage(text, 'bot', chips);
+  }, delay);
+}
+
+function updateTopicBanner(topic) {
+  const banner = document.getElementById('topicBanner');
+  const label = document.getElementById('topicLabel');
+  if (topic) {
+    label.textContent = topic.charAt(0).toUpperCase() + topic.slice(1);
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+}
+
+/* ── Core Bot Logic ── */
+function handleUserInput(text) {
+  if (!text.trim() || handedOff) return;
+
+  addMessage(text, 'user');
+
+  const lower = text.toLowerCase().trim();
+
+  /* 1. Banned: assignment / exam help */
+  if (isBanned(lower)) {
+    botReply(
+      `I appreciate you asking, but I'm not able to do your assignment or exam for you — that wouldn't actually help you learn! 🌸\n\nI *can* help you **understand** the concepts involved so you can solve it yourself.\n\nWould you like me to explain a topic, or shall I connect you with a human tutor?`,
+      ["Explain a topic", "Connect to human tutor"]
+    );
+    return;
+  }
+
+  /* 2. Off-topic */
+  if (isOffTopic(lower)) {
+    offTopicAttempts++;
+    if (offTopicAttempts >= 2) {
+      offTopicAttempts = 0;
+      handedOff = true;
+      botReply(
+        `I apologize for the confusion. To make sure you get the right guidance, let me connect you with our live programming tutor who can walk you through it step-by-step. Please hold on for a moment. 🌸\n\n📬 **Email:** tutor@studybuddy.edu\n📞 **Phone:** +1 (800) 123-4567\n\nA tutor will be with you shortly!\n\n*This chat has been passed on. Refresh the page to start a new session with me.*`
+      );
+    } else {
+      botReply(
+        `I apologize, but that topic is outside my area! 🙈 I'm only able to help with **Basic Python** concepts.\n\nI can help you with things like variables, loops, functions, and more. Would you like to explore a Python topic?`,
+        ["Back to Python topics", "Connect to human tutor"]
+      );
+    }
+    return;
+  }
+
+  /* 3. Human handoff request */
+  if (/connect.*human|human.*tutor|speak.*person|talk.*person|real person/i.test(lower)) {
+    handedOff = true;
+    botReply(
+      `I apologize for the confusion. To make sure you get the right guidance, let me connect you with our live programming tutor who can walk you through it step-by-step. Please hold on for a moment. 🌸\n\n📬 **Email:** tutor@studybuddy.edu\n📞 **Phone:** +1 (800) 123-4567\n\nA tutor will be with you shortly!\n\n*This chat has been passed on. Refresh the page to start a new session with me.*`
+    );
+    return;
+  }
+
+  /* 4. Greeting / help */
+  if (/^(hi|hello|hey|good\s*(morning|afternoon|evening)|howdy|sup)[\s!]*$/i.test(lower)) {
+    botReply(
+      `Hello! 👋 Welcome to **Study Buddy Bot** 🌸\n\nI'm here to help you understand **Basic Python**! I can:\n• Explain a topic in simple terms\n• Break down formulas or syntax\n• Give you practice questions\n\nWhat topic would you like to explore today?`,
+      TOPICS.map(t => t.charAt(0).toUpperCase() + t.slice(1))
+    );
+    return;
+  }
+
+  /* 5. Waiting for a topic after a prompt */
+  if (waitingForTopic) {
+    const found = detectTopic(lower);
+    if (found) {
+      waitingForTopic = false;
+      failedAttempts = 0;
+      currentTopic = found;
+      updateTopicBanner(currentTopic);
+      botReply(
+        `Great choice! 🌸 Let's learn about **${currentTopic}**.\n\nWhat would you like to do?`,
+        ["Explain in simple terms", "Break down the formula/syntax", "Give me a practice question"]
+      );
+    } else if (isOffTopic(lower)) {
+      offTopicAttempts++;
+      if (offTopicAttempts >= 2) {
+        offTopicAttempts = 0;
+        handedOff = true;
+        botReply(
+          `I apologize for the confusion. To make sure you get the right guidance, let me connect you with our live programming tutor who can walk you through it step-by-step. Please hold on for a moment. 🌸\n\n📬 **Email:** tutor@studybuddy.edu\n📞 **Phone:** +1 (800) 123-4567\n\nA tutor will be with you shortly!\n\n*This chat has been passed on. Refresh the page to start a new session with me.*`
+        );
+      } else {
+        botReply(
+          `I apologize, but that topic is outside my area! 🙈 I'm only able to help with **Basic Python** concepts.\n\nI can help you with things like variables, loops, functions, and more. Would you like to explore a Python topic?`,
+          ["Back to Python topics", "Connect to human tutor"]
+        );
+      }
+    } else {
+      failedAttempts++;
+      if (failedAttempts >= 2) {
+        handedOff = true;
+        botReply(
+          `I apologize for the confusion. To make sure you get the right guidance, let me connect you with our live programming tutor who can walk you through it step-by-step. Please hold on for a moment. 🌸\n\n📬 **Email:** tutor@studybuddy.edu\n📞 **Phone:** +1 (800) 123-4567\n\nA tutor will be with you shortly!\n\n*This chat has been passed on. Refresh the page to start a new session with me.*`
+        );
+      } else {
+        botReply(
+          `I apologize, but I need a little more context. Which part of the Python lesson are you working on? Are you stuck on **variables**, **data types**, or writing your first **print()** statement?\n\nHere are all the topics I can help with:`,
+          TOPICS.map(t => t.charAt(0).toUpperCase() + t.slice(1))
+        );
+      }
+    }
+    return;
+  }
+
+  /* 6. Topic change request */
+  const topicChangeMatch = /(?:change|switch|learn|study|go to|let's do|next topic[: ]*)(.*)/i.exec(lower);
+  if (topicChangeMatch) {
+    const found = detectTopic(topicChangeMatch[1]);
+    if (found) {
+      failedAttempts = 0;
+      currentTopic = found;
+      updateTopicBanner(currentTopic);
+      botReply(
+        `Switching to **${currentTopic}**! 🌸 What would you like to do?`,
+        ["Explain in simple terms", "Break down the formula/syntax", "Give me a practice question"]
+      );
+      return;
+    }
+  }
+
+  /* 7. Detect intent: explain */
+  const isExplain = /explain|what is|what are|tell me about|describe|how does|help me understand/i.test(lower);
+  /* 8. Detect intent: formula/syntax */
+  const isFormula = /formula|syntax|break(?:\s*it)?\s*down|how do i write|how to (?:write|use|define)|notation|structure/i.test(lower);
+  /* 9. Detect intent: practice */
+  const isPractice = /practice|question|exercise|quiz|test me|give me a|challenge/i.test(lower);
+
+  /* 10. Detect a topic mentioned inline */
+  const inlineTopic = detectTopic(lower);
+  if (inlineTopic) {
+    failedAttempts = 0;
+    currentTopic = inlineTopic;
+    updateTopicBanner(currentTopic);
+  }
+
+  if (!currentTopic) {
+    /* No topic yet — ask for it */
+    waitingForTopic = true;
+    botReply(
+      `I'd love to help you! 🌸 But first — which **Python topic** are you working on?\n\nHere's what I can teach:\n${TOPICS.map(t => `• **${t.charAt(0).toUpperCase() + t.slice(1)}**`).join('\n')}`,
+      TOPICS.map(t => t.charAt(0).toUpperCase() + t.slice(1))
+    );
+    return;
+  }
+
+  const entry = KB[currentTopic];
+
+  if (isExplain && !isFormula && !isPractice) {
+    botReply(entry.explain, ["Break down the formula/syntax", "Give me a practice question", "Change topic"]);
+    return;
+  }
+  if (isFormula) {
+    botReply(entry.formula, ["Explain in simple terms", "Give me a practice question", "Change topic"]);
+    return;
+  }
+  if (isPractice) {
+    botReply(entry.practice, ["Explain in simple terms", "Break down the formula/syntax", "Change topic"]);
+    return;
+  }
+
+  /* Topic mentioned but no clear intent — prompt */
+  if (inlineTopic) {
+    botReply(
+      `Got it — **${currentTopic}**! 🌸 What would you like?`,
+      ["Explain in simple terms", "Break down the formula/syntax", "Give me a practice question"]
+    );
+    return;
+  }
+
+  /* 11. Fallback */
+  failedAttempts++;
+  if (failedAttempts >= 2) {
+    handedOff = true;
+    botReply(
+      `I apologize for the confusion. To make sure you get the right guidance, let me connect you with our live programming tutor who can walk you through it step-by-step. Please hold on for a moment. 🌸\n\n📬 **Email:** tutor@studybuddy.edu\n📞 **Phone:** +1 (800) 123-4567\n\nA tutor will be with you shortly!\n\n*This chat has been passed on. Refresh the page to start a new session with me.*`
+    );
+  } else {
+    botReply(
+      `I apologize, but I need a little more context. Which part of the Python lesson are you working on? Are you stuck on **variables**, **data types**, or writing your first **print()** statement?\n\nYou can also ask me to:\n• **Explain** a topic in simple terms\n• **Break down** a formula or syntax\n• Give you a **practice question**`,
+      ["Explain in simple terms", "Break down the formula/syntax", "Give me a practice question", "Change topic"]
+    );
+  }
+}
+
+/* ── UI wiring ── */
+const textarea = document.getElementById('userInput');
+const sendBtn  = document.getElementById('sendBtn');
+
+function send() {
+  const val = textarea.value.trim();
+  if (!val) return;
+  textarea.value = '';
+  textarea.style.height = 'auto';
+  handleUserInput(val);
+}
+
+sendBtn.addEventListener('click', send);
+textarea.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+textarea.addEventListener('input', () => {
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+});
+
+/* ── Welcome message ── */
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    botReply(
+      `Hi there! 👋 I'm **Study Buddy Bot** 🌸\n\nI'm your learning companion for **Basic Python**! I won't do the work *for* you — but I'll help you truly understand it. 💪\n\nYou can ask me things like:\n• *"Can you explain **loops** in simple terms?"*\n• *"I don't understand functions — can you break it down?"*\n• *"Give me a practice question on **lists**."*\n\nWhich topic shall we start with?`,
+      TOPICS.map(t => t.charAt(0).toUpperCase() + t.slice(1)),
+      600
+    );
+  }, 300);
+});
+</script>
+
+</body>
+</html>
